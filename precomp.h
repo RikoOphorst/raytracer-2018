@@ -5,7 +5,10 @@
 // do not include headers in header files (ever).
 
 #define SCRWIDTH		800
+#define SCRWIDTHF   800.0f
 #define SCRHEIGHT		512
+#define SCRHEIGHTF  512.0f
+#define SCRASPECT   SCRWIDTHF / SCRHEIGHTF
 // #define FULLSCREEN
 // #define ADVANCEDGL	// faster if your system supports it
 

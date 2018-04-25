@@ -1,6 +1,6 @@
 #include "precomp.h" // include (only) this in every .cpp file
 
-Rasterizer rasterizer;
+Raytracer raytracer;
 Camera camera;
 vec3 position;
 
@@ -9,14 +9,14 @@ vec3 position;
 // -----------------------------------------------------------
 void Game::Init()
 {
-	// initialize rasterizer
-	rasterizer.Init( screen );
+	// initialize raytracer
+	raytracer.Init( screen );
 	// setup camera (note: in ogl/glm, z for 'far' is -inf)
 	position = vec3( 0, 0, 8 );
 	camera.SetPosition( position );
 	camera.LookAt( vec3( 0, 0, 0 ) );
 	// initialize scene
-	rasterizer.scene->Add( "assets/unity_full/unityScene.obj" );
+	//raytracer.scene->Add( "assets/unity_full/unityScene.obj" );
 }
 
 // -----------------------------------------------------------
@@ -33,8 +33,8 @@ void Game::HandleInput( float dt )
 	camera.SetPosition( position );
 	if (GetAsyncKeyState( VK_LEFT )) camera.LookAt( camera.GetPosition() + camera.GetForward() - dt * 0.02f * camera.GetRight() );
 	if (GetAsyncKeyState( VK_RIGHT )) camera.LookAt( camera.GetPosition() + camera.GetForward() + dt * 0.02f * camera.GetRight() );
-	if (GetAsyncKeyState( VK_UP )) camera.LookAt( camera.GetPosition() + camera.GetForward() - dt * 0.02f * camera.GetUp() );
-	if (GetAsyncKeyState( VK_DOWN )) camera.LookAt( camera.GetPosition() + camera.GetForward() + dt * 0.02f * camera.GetUp() );
+	if (GetAsyncKeyState( VK_UP )) camera.LookAt( camera.GetPosition() + camera.GetForward() + dt * 0.02f * camera.GetUp() );
+	if (GetAsyncKeyState( VK_DOWN )) camera.LookAt( camera.GetPosition() + camera.GetForward() - dt * 0.02f * camera.GetUp() );
 }
 
 // -----------------------------------------------------------
@@ -44,5 +44,5 @@ void Game::Tick( float deltaTime )
 {
 	HandleInput( 1 );
 	screen->Clear( 0 );
-	rasterizer.Render( camera );
+	raytracer.Render( camera );
 }

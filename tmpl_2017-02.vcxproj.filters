@@ -17,6 +17,9 @@
     <ClCompile Include="raytracer.cpp">
       <Filter>template code</Filter>
     </ClCompile>
+    <ClCompile Include="..\raytracing-template\actor.cpp">
+      <Filter>template code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h" />
@@ -34,6 +37,9 @@
       <Filter>template code</Filter>
     </ClInclude>
     <ClInclude Include="raytracer.h">
+      <Filter>template code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\raytracing-template\actor.h">
       <Filter>template code</Filter>
     </ClInclude>
   </ItemGroup>

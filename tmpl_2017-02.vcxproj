@@ -226,6 +226,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\raytracing-template\actor.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="rasterizer.cpp" />
     <ClCompile Include="raytracer.cpp" />
@@ -236,6 +237,7 @@
     <ClCompile Include="threads.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\raytracing-template\actor.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="precomp.h" />
     <ClInclude Include="rasterizer.h" />
