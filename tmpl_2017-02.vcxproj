@@ -226,8 +226,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\raytracing-template\actor.cpp" />
+    <ClCompile Include="bvh.cc" />
     <ClCompile Include="game.cpp" />
+    <ClCompile Include="primitive.cc" />
     <ClCompile Include="rasterizer.cpp" />
     <ClCompile Include="raytracer.cpp" />
     <ClCompile Include="surface.cpp" />
@@ -237,9 +238,10 @@
     <ClCompile Include="threads.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\raytracing-template\actor.h" />
+    <ClInclude Include="bvh.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="precomp.h" />
+    <ClInclude Include="primitive.h" />
     <ClInclude Include="rasterizer.h" />
     <ClInclude Include="raytracer.h" />
     <ClInclude Include="surface.h" />

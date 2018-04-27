@@ -1,5 +1,7 @@
 #pragma once
 
+class Primitive;
+
 namespace Tmpl8
 {
   // -----------------------------------------------------------
@@ -34,9 +36,6 @@ namespace Tmpl8
     static float* zbuffer;
     static vec4 frustum[5];
 
-    vec3 E; // eye position
-    vec3 V; // view direction
-    vec3 C; // center of screen;
     float d; // distance of the screen plane from the E point
     vec3 p0; // top left of screen
     vec3 p1; // top right of screen
@@ -44,22 +43,9 @@ namespace Tmpl8
 
     float zdepth; // zdepth
 
-  private:
-    Surface* screen_;
-  };
+    Surface* screen;
 
-  class Sphere
-  {
-  public:
-    Sphere(const vec3& pos, float radius);
-    ~Sphere();
-
-    void Intersect(Ray& ray);
-
-  private:
-    vec3 pos;
-    float r;
-    float r2;
+    std::vector<Primitive*> primitives;
   };
 
 };

@@ -1,5 +1,7 @@
 #include "precomp.h"
 
+#include "primitive.h"
+
 float* Raytracer::zbuffer = nullptr;
 vec4 Raytracer::frustum[5];
 
@@ -19,7 +21,7 @@ bool IntersectSphere(const vec3& rayO, const vec3& rayD)
 
 //------------------------------------------------------------------------------------------------------
 Raytracer::Raytracer() :
-  screen_(nullptr),
+  screen(nullptr),
   scene(nullptr)
 {
 
@@ -32,7 +34,7 @@ Raytracer::~Raytracer()
 }
 
 //------------------------------------------------------------------------------------------------------
-void Raytracer::Init(Surface* screen)
+void Raytracer::Init(Surface* scr)
 {
   // setup outline tables & zbuffer
   Mesh::xleft = new float[SCRHEIGHT], Mesh::xright = new float[SCRHEIGHT];
@@ -54,10 +56,14 @@ void Raytracer::Init(Surface* screen)
   frustum[3] = vec4(normalize(cross(p3 - p0, p2 - p3)), 0); // right plane
   frustum[4] = vec4(normalize(cross(p4 - p0, p3 - p4)), 0); // bottom plane
                                                             // store screen pointer
-  Mesh::screen = screen;
+  Mesh::screen = scr;
   // initialize scene
   (scene = new Scene())->root = new SGNode();
-  screen_ = screen;
+  screen = scr;
+
+  primitives.push_back(new Sphere(vec3(0.0f, 1.0f, -50.0f), 1.0f));
+  primitives.push_back(new Plane(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f)));
+  primitives.push_back(new Triangle(vec3(10.0f, 20.0f, -50.0f), vec3(10.0f, 0.0f, -50.0f), vec3(20.0f, 0.0f, -50.0f), vec3(0.0f, 0.0f, 1.0f)));
 }
 
 //------------------------------------------------------------------------------------------------------
@@ -75,21 +81,14 @@ bool Raytracer::IsOccluded(Ray& ray)
 //------------------------------------------------------------------------------------------------------
 void Raytracer::Render(Camera& camera)
 {
-  Sphere mySphere(vec3(0.0f, 0.0f, 10.0f), 1.0f);
+  Sphere mySphere(vec3(0.0f, 0.0f, -100.0f), 1.0f);
   
-  zdepth = 15.0f;
-  d = 2.0f;
-  E = camera.GetPosition();
-  V = camera.GetForward().normalized();
-  C = E + d * V;
+  zdepth = 1500.0f;
+  d = 5.0f;
 
-  vec3 topleft = (camera.transform * vec4(-1.0f, -1.0f, 0.0f, 0.0f)).xyz;
-  vec3 topright = (camera.transform * vec4(1.0f, -1.0f, 0.0f, 0.0f)).xyz;
-  vec3 bottomleft = (camera.transform * vec4(-1.0f, 1.0f, 0.0f, 0.0f)).xyz;
-
-  p0 = C + topleft;
-  p1 = C + topright;
-  p2 = C + bottomleft;
+  p0 = camera.GetPosition() + (camera.transform * vec4(-SCRASPECT,  1, -d, 0)).xyz;
+  p1 = camera.GetPosition() + (camera.transform * vec4( SCRASPECT,  1, -d, 0)).xyz;
+  p2 = camera.GetPosition() + (camera.transform * vec4(-SCRASPECT, -1, -d, 0)).xyz;
 
   float wr = 1.0f / SCRWIDTH;
   float hr = 1.0f / SCRHEIGHT;
@@ -107,57 +106,23 @@ void Raytracer::Render(Camera& camera)
       sp = p0 + (uu * (p1 - p0)) + (vv * (p2 - p0));
 
       vec3 D; // ray direction
-      D = normalize(sp - E);
+      D = normalize(sp - camera.GetPosition());
 
-      Ray someRay = Ray(E, D, zdepth);
+      Ray someRay = Ray(camera.GetPosition(), D, zdepth);
 
-      mySphere.Intersect(someRay);
 
-      if (someRay.t != zdepth)
+      for (int i = 0; i < primitives.size(); i++)
       {
-        float percentage = 1 - (someRay.t / zdepth);
+        bool hit = false;
+        float t = 0.0f;
 
-        unsigned int color = percentage * 255;
-        color <<= 8;
+        primitives[i]->Intersect(someRay, hit, t);
 
-        screen_->Plot(u, v, 0xFFFFFF);
+        if (hit)
+        {
+          screen->Plot(u, v, 0xFFFFFF);
+        }
       }
     }
-  }
-}
-
-//------------------------------------------------------------------------------------------------------
-Sphere::Sphere(const vec3& pos, float radius) :
-  pos(pos),
-  r(radius),
-  r2(radius * radius)
-{
-
-}
-
-//------------------------------------------------------------------------------------------------------
-Sphere::~Sphere()
-{
-
-}
-
-//------------------------------------------------------------------------------------------------------
-void Sphere::Intersect(Ray& ray)
-{
-  vec3 c = pos - ray.O;
-  float t = dot(c, ray.D);
-  vec3 q = c - t * ray.D;
-  float p2 = dot(q, q);
-  
-  if (p2 > r2)
-  {
-    return;
-  }
-  
-  t -= sqrt(r2 - p2);
-  
-  if (t < ray.t && t > 0)
-  {
-    ray.t = t;
   }
 }
