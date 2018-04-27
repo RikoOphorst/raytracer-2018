@@ -5,7 +5,15 @@
 #include <cmath>
 
 //------------------------------------------------------------------------------------------------------
-Triangle::Triangle() :
+Primitive::Primitive(int material) :
+  mat(material)
+{
+
+}
+
+//------------------------------------------------------------------------------------------------------
+Triangle::Triangle(int material) :
+  Primitive(material),
   p0(0.0f, 0.0f, 0.0f),
   p1(1.0f, 0.0f, 0.0f),
   p2(0.0f, 1.0f, 0.0f),
@@ -15,7 +23,8 @@ Triangle::Triangle() :
 }
 
 //------------------------------------------------------------------------------------------------------
-Triangle::Triangle(const Tmpl8::vec3& point0, const Tmpl8::vec3& point1, const Tmpl8::vec3& point2, const Tmpl8::vec3& normal) :
+Triangle::Triangle(int material, const Tmpl8::vec3& point0, const Tmpl8::vec3& point1, const Tmpl8::vec3& point2, const Tmpl8::vec3& normal) :
+  Primitive(material),
   p0(point0),
   p1(point1),
   p2(point2),
@@ -44,7 +53,7 @@ void Triangle::Init(const Tmpl8::vec3& point0, const Tmpl8::vec3& point1, const 
 }
 
 //------------------------------------------------------------------------------------------------------
-void Triangle::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t)
+void Triangle::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t, Tmpl8::vec3& out_I, Tmpl8::vec3& out_N)
 {
   const float EPSILON = 0.0000001f;
 
@@ -54,6 +63,7 @@ void Triangle::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t)
   edge2 = p2 - p0;
   h = cross(ray.D, edge2);
   a = dot(edge1, h);
+
   if (a > -EPSILON && a < EPSILON)
   {
     out_hit = false;
@@ -81,7 +91,8 @@ void Triangle::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t)
   float t = f * dot(edge2, q);
   if (t > EPSILON) // ray intersection
   {
-    //outIntersectionPoint = rayOrigin + rayVector * t;
+    out_N = N;
+    out_I = ray.O + ray.D * (t - 0.0001f);
     out_t = t;
     out_hit = true;
   }
@@ -94,13 +105,15 @@ void Triangle::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t)
 
 
 //------------------------------------------------------------------------------------------------------
-Sphere::Sphere()
+Sphere::Sphere(int material) :
+  Primitive(material)
 {
 
 }
 
 //------------------------------------------------------------------------------------------------------
-Sphere::Sphere(const Tmpl8::vec3& pos, float radius) :
+Sphere::Sphere(int material, const Tmpl8::vec3& pos, float radius) :
+  Primitive(material),
   r(radius),
   r2(radius * radius)
 {
@@ -122,7 +135,7 @@ void Sphere::Init(const Tmpl8::vec3& pos, float radius)
 }
 
 //------------------------------------------------------------------------------------------------------
-void Sphere::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t)
+void Sphere::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t, Tmpl8::vec3& out_I, Tmpl8::vec3& out_N)
 {
   Tmpl8::vec3 C = c - ray.O;
   float t = dot(C, ray.D);
@@ -141,6 +154,9 @@ void Sphere::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t)
   {
     out_hit = true;
     out_t = t;
+    out_I = ray.O + ray.D * (out_t - 0.0001f);
+    out_N = (out_I - c);
+    out_N.normalize();
     return;
   }
 
@@ -148,7 +164,8 @@ void Sphere::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t)
 }
 
 //------------------------------------------------------------------------------------------------------
-AABB::AABB() :
+AABB::AABB(int material) :
+  Primitive(material),
   minp(0.0f, 0.0f, 0.0f),
   maxp(1.0f, 1.0f, 1.0f)
 {
@@ -156,7 +173,8 @@ AABB::AABB() :
 }
 
 //------------------------------------------------------------------------------------------------------
-AABB::AABB(const Tmpl8::vec3& min, const Tmpl8::vec3& max) :
+AABB::AABB(int material, const Tmpl8::vec3& min, const Tmpl8::vec3& max) :
+  Primitive(material),
   minp(minp),
   maxp(maxp)
 {
@@ -178,29 +196,32 @@ void AABB::Init(const Tmpl8::vec3& mina, const Tmpl8::vec3& maxa)
 }
 
 //------------------------------------------------------------------------------------------------------
-void AABB::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t)
+void AABB::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t, Tmpl8::vec3& out_I, Tmpl8::vec3& out_N)
 {
 
 }
 
 //------------------------------------------------------------------------------------------------------
-Plane::Plane() :
+Plane::Plane(int material) :
+  Primitive(material),
   N(0.0f, 1.0f, 0.0f)
 {
   c = Tmpl8::vec3(0.0f, 0.0f, 0.0f);
 }
 
 //------------------------------------------------------------------------------------------------------
-Plane::Plane(const Tmpl8::vec3& origin, const Tmpl8::vec3& normal) :
+Plane::Plane(int material, const Tmpl8::vec3& origin, const Tmpl8::vec3& normal) :
+  Primitive(material),
   N(normal)
 {
   c = origin;
+  Init();
 }
 
 //------------------------------------------------------------------------------------------------------
 void Plane::Init()
 {
-  
+  N.normalize();
 }
 
 //------------------------------------------------------------------------------------------------------
@@ -208,21 +229,26 @@ void Plane::Init(const Tmpl8::vec3& origin, const Tmpl8::vec3& normal)
 {
   c = origin;
   N = normal;
+  Init();
 }
 
 //------------------------------------------------------------------------------------------------------
-void Plane::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t)
+void Plane::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t, Tmpl8::vec3& out_I, Tmpl8::vec3& out_N)
 {
-  //out.normal = normal;
-
   float denom = dot(N, ray.D);
   if (abs(denom) > 1e-6)
   {
     vec3 d = c - ray.O;
     float t = dot(d, N) / denom;
-    //out.point = ray.O + (t - 0.0001f) * ray.D;
-    out_t = t;
     out_hit = (t < ray.t && t >= 0.0f);
+   
+    if (out_hit)
+    {
+      out_I = ray.O + ray.D * (t - 0.0001f);
+      out_N = N;
+      out_t = t;
+    }
+    
     return;
   }
 

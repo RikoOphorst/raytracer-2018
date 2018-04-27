@@ -1,6 +1,8 @@
 #include "precomp.h"
 
 #include "primitive.h"
+#include "color.h"
+#include "material.h"
 
 float* Raytracer::zbuffer = nullptr;
 vec4 Raytracer::frustum[5];
@@ -61,9 +63,11 @@ void Raytracer::Init(Surface* scr)
   (scene = new Scene())->root = new SGNode();
   screen = scr;
 
-  primitives.push_back(new Sphere(vec3(0.0f, 1.0f, -50.0f), 1.0f));
-  primitives.push_back(new Plane(vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f)));
-  primitives.push_back(new Triangle(vec3(10.0f, 20.0f, -50.0f), vec3(10.0f, 0.0f, -50.0f), vec3(20.0f, 0.0f, -50.0f), vec3(0.0f, 0.0f, 1.0f)));
+  materials.push_back(new Material(false, Color::kBlue));
+
+  primitives.push_back(new Sphere(0, vec3(0.0f, 1.0f, -50.0f), 1.0f));
+  primitives.push_back(new Plane(0, vec3(0.0f, -1.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f)));
+  primitives.push_back(new Triangle(0, vec3(10.0f, 20.0f, -50.0f), vec3(10.0f, 0.0f, -50.0f), vec3(20.0f, 0.0f, -50.0f), vec3(0.0f, 0.0f, 1.0f)));
 }
 
 //------------------------------------------------------------------------------------------------------
@@ -81,8 +85,6 @@ bool Raytracer::IsOccluded(Ray& ray)
 //------------------------------------------------------------------------------------------------------
 void Raytracer::Render(Camera& camera)
 {
-  Sphere mySphere(vec3(0.0f, 0.0f, -100.0f), 1.0f);
-  
   zdepth = 1500.0f;
   d = 5.0f;
 
@@ -92,6 +94,9 @@ void Raytracer::Render(Camera& camera)
 
   float wr = 1.0f / SCRWIDTH;
   float hr = 1.0f / SCRHEIGHT;
+
+  Ray ray(camera.GetPosition(), p0, zdepth);
+  Color color;
 
   for (int u = 0; u < SCRWIDTH; u++)
   {
@@ -108,21 +113,86 @@ void Raytracer::Render(Camera& camera)
       vec3 D; // ray direction
       D = normalize(sp - camera.GetPosition());
 
-      Ray someRay = Ray(camera.GetPosition(), D, zdepth);
+      ray.O = camera.GetPosition();
+      ray.D = normalize(sp - camera.GetPosition());
+      ray.t = zdepth;
 
-
-      for (int i = 0; i < primitives.size(); i++)
-      {
-        bool hit = false;
-        float t = 0.0f;
-
-        primitives[i]->Intersect(someRay, hit, t);
-
-        if (hit)
-        {
-          screen->Plot(u, v, 0xFFFFFF);
-        }
-      }
+      Trace(ray, color);
+      screen->Plot(u, v, color.color_byte);
     }
   }
+}
+
+//------------------------------------------------------------------------------------------------------
+void Tmpl8::Raytracer::Trace(const Ray& ray, Color& out_color)
+{
+  int i;
+  int num_primitives = primitives.size();
+  bool hit;
+  float t;
+  vec3 I;
+  vec3 N;
+  
+  for (i = 0; i < num_primitives; ++i)
+  {
+    hit = false;
+    t = zdepth;
+    primitives[i]->Intersect(ray, hit, t, I, N);
+
+    if (hit)
+    {
+      DirectIllumination(I, N, out_color);
+
+      out_color = out_color * materials[primitives[i]->mat]->diffuse;
+
+      break;
+    }
+    else
+    {
+      out_color = Color::kBlack;
+    }
+  }
+}
+
+//------------------------------------------------------------------------------------------------------
+void Tmpl8::Raytracer::DirectIllumination(const vec3& I, const vec3& N, Color& out_color)
+{
+  vec3 L = vec3(0.0f, 5.0f, -40.0f) - I;
+  float dist = L.length();
+  L.normalize();
+
+  if (!IsVisible(I, L, dist))
+  {
+    out_color = Color::kBlack;
+  }
+  else
+  {
+    out_color = Color(vec3(1.0f, 1.0f, 1.0f) * dot(N, L), true);
+  }
+}
+
+//------------------------------------------------------------------------------------------------------
+bool Tmpl8::Raytracer::IsVisible(const vec3& from, const vec3& direction, float t)
+{
+  Ray ray(from, direction, 1000.0f);
+
+  int i;
+  int num_primitives = primitives.size();
+  bool hit;
+  vec3 I0;
+  vec3 N;
+  float t0;
+
+  for (i = 0; i < num_primitives; ++i)
+  {
+    hit = false;
+    primitives[i]->Intersect(ray, hit, t0, I0, N);
+    
+    if (hit)
+    {
+      return false;
+    }
+  }
+
+  return true;
 }

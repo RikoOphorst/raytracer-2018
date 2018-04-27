@@ -227,7 +227,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="bvh.cc" />
+    <ClCompile Include="color.cc" />
     <ClCompile Include="game.cpp" />
+    <ClCompile Include="material.cc" />
     <ClCompile Include="primitive.cc" />
     <ClCompile Include="rasterizer.cpp" />
     <ClCompile Include="raytracer.cpp" />
@@ -239,7 +241,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bvh.h" />
+    <ClInclude Include="color.h" />
     <ClInclude Include="game.h" />
+    <ClInclude Include="material.h" />
     <ClInclude Include="precomp.h" />
     <ClInclude Include="primitive.h" />
     <ClInclude Include="rasterizer.h" />

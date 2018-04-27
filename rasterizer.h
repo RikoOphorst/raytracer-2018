@@ -23,15 +23,15 @@ public:
 };
 
 // -----------------------------------------------------------
-// Material class
+// MaterialRasterizer class
 // basic material properties
 // -----------------------------------------------------------
-class Material
+class MaterialRasterizer
 {
 public:
 	// constructor / destructor
-	Material() : texture( 0 ), name( 0 ) {}
-	~Material();
+	MaterialRasterizer() : texture( 0 ), name( 0 ) {}
+	~MaterialRasterizer();
 	// methods
 	void SetName( char* name );
 	// data members
@@ -101,7 +101,7 @@ public:
 	vec3* N;						// triangle plane
 	int* tri;						// connectivity data
 	int verts, tris;				// vertex & triangle count
-	Material* material;				// mesh material
+	MaterialRasterizer* material;				// mesh material
 	vec3 bounds[2];					// mesh bounds
 	static Surface* screen;
 	static float* xleft, *xright;	// outline tables for rasterization
@@ -125,7 +125,7 @@ public:
 	void Render();
 	SGNode* Add( char* file, float scale = 1.0f ) { SGNode* n = LoadOBJ( file, scale ); root->Add( n ); return n; }
 	SGNode* LoadOBJ( const char* file, const float scale );
-	Material* FindMaterial( const char* name );
+	MaterialRasterizer* FindMaterial( const char* name );
 	Texture* FindTexture( const char* name );
 private:
 	void ExtractPath( const char* file );
@@ -133,7 +133,7 @@ private:
 	// data members
 public:
 	SGNode* root;
-	vector<Material*> matList;
+	vector<MaterialRasterizer*> matList;
 	vector<Texture*> texList;
 	char* scenePath;
 };

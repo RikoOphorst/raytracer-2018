@@ -19,6 +19,8 @@
     </ClCompile>
     <ClCompile Include="primitive.cc" />
     <ClCompile Include="bvh.cc" />
+    <ClCompile Include="color.cc" />
+    <ClCompile Include="material.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h" />
@@ -40,6 +42,8 @@
     </ClInclude>
     <ClInclude Include="primitive.h" />
     <ClInclude Include="bvh.h" />
+    <ClInclude Include="color.h" />
+    <ClInclude Include="material.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="template code">

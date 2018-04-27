@@ -16,8 +16,8 @@ static vec3 raxis[3] = { vec3( 1, 0, 0  ), vec3( 0, 1, 0 ), vec3( 0, 0, 1 ) };
 Texture::Texture( char* file ) : name( 0 ) { pixels = new Surface8( file ); SetName( file ); }
 Texture::~Texture() { delete pixels; delete name; }
 void Texture::SetName( const char* n ) { delete name; strcpy( name = new char[strlen( n ) + 1], n ); }
-Material::~Material() { delete name; }
-void Material::SetName( char* n ) { delete name; strcpy( name = new char[strlen( n ) + 1], n ); }
+MaterialRasterizer::~MaterialRasterizer() { delete name; }
+void MaterialRasterizer::SetName( char* n ) { delete name; strcpy( name = new char[strlen( n ) + 1], n ); }
 SGNode::~SGNode() { for( uint i = 0; i < child.size(); i++ ) delete child[i]; }
 Rasterizer::~Rasterizer() { delete scene; }
 Mesh::~Mesh() { delete pos; delete N; delete spos; delete tri; }
@@ -184,7 +184,7 @@ void Scene::ExtractPath( const char* file )
 // Scene::FindMaterial
 // get a material pointer by material name
 // -----------------------------------------------------------
-Material* Scene::FindMaterial( const char* name )
+MaterialRasterizer* Scene::FindMaterial( const char* name )
 {
 	for( uint s = matList.size(), i = 0; i < s; i++ ) if (matList[i]->name) 
 		if (!strcmp( matList[i]->name, name )) return matList[i];
@@ -214,7 +214,7 @@ void Scene::LoadMTL( const char* file )
 	strcat( fname, file );
 	FILE* f = fopen( fname, "r" );
 	if (!f) return;
-	Material* current = 0;
+	MaterialRasterizer* current = 0;
 	int firstIdx = matList.size();
 	while (!feof( f ))
 	{
@@ -226,7 +226,7 @@ void Scene::LoadMTL( const char* file )
 		if (!_stricmp( cmd, "newmtl" ))
 		{
 			sscanf( line + strlen( cmd ), "%s", matName );
-			matList.push_back( current = new Material() );
+			matList.push_back( current = new MaterialRasterizer() );
 			current->SetName( matName );
 		}
 		if (_stricmp( cmd, "map_Kd" )) continue;

@@ -5,22 +5,25 @@
 class Primitive
 {
 public:
-  virtual void Intersect(const Tmpl8::Ray&, bool& out_hit, float& out_t) = 0;
+  Primitive(int material);
+
+  virtual void Intersect(const Tmpl8::Ray&, bool& out_hit, float& out_t, Tmpl8::vec3& out_I, Tmpl8::vec3& out_N) = 0;
 
 public:
   Tmpl8::vec3 c; // Centroid of the primitive
+  int mat; // MaterialRasterizer of this primitive
 };
 
 class Triangle : public Primitive
 {
 public:
-  Triangle();
-  Triangle(const Tmpl8::vec3& point0, const Tmpl8::vec3& point1, const Tmpl8::vec3& point2, const Tmpl8::vec3& normal);
+  Triangle(int material);
+  Triangle(int material, const Tmpl8::vec3& point0, const Tmpl8::vec3& point1, const Tmpl8::vec3& point2, const Tmpl8::vec3& normal);
   
   void Init();
   void Init(const Tmpl8::vec3& point0, const Tmpl8::vec3& point1, const Tmpl8::vec3& point2, const Tmpl8::vec3& normal);
 
-  virtual void Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t) override;
+  virtual void Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t, Tmpl8::vec3& out_I, Tmpl8::vec3& out_N) override;
   
 public:
   Tmpl8::vec3 p0; // Point 0 of the triangle
@@ -32,13 +35,13 @@ public:
 class Sphere : public Primitive
 {
 public:
-  Sphere();
-  Sphere(const Tmpl8::vec3& pos, float radius);
+  Sphere(int material);
+  Sphere(int material, const Tmpl8::vec3& pos, float radius);
 
   void Init();
   void Init(const Tmpl8::vec3& pos, float radius);
 
-  virtual void Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t) override;
+  virtual void Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t, Tmpl8::vec3& out_I, Tmpl8::vec3& out_N) override;
 
 public:
   float r; // Radius of the sphere
@@ -48,13 +51,13 @@ public:
 class AABB : public Primitive
 {
 public:
-  AABB();
-  AABB(const Tmpl8::vec3& minp, const Tmpl8::vec3& maxp);
+  AABB(int material);
+  AABB(int material, const Tmpl8::vec3& minp, const Tmpl8::vec3& maxp);
 
   void Init();
   void Init(const Tmpl8::vec3& minp, const Tmpl8::vec3& maxp);
 
-  virtual void Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t) override;
+  virtual void Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t, Tmpl8::vec3& out_I, Tmpl8::vec3& out_N) override;
 
 public:
   Tmpl8::vec3 minp; // min point of the AABB
@@ -64,13 +67,13 @@ public:
 class Plane : public Primitive
 {
 public:
-  Plane();
-  Plane(const Tmpl8::vec3& origin, const Tmpl8::vec3& normal);
+  Plane(int material);
+  Plane(int material, const Tmpl8::vec3& origin, const Tmpl8::vec3& normal);
 
   void Init();
   void Init(const Tmpl8::vec3& origin, const Tmpl8::vec3& normal);
 
-  virtual void Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t) override;
+  virtual void Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t, Tmpl8::vec3& out_I, Tmpl8::vec3& out_N) override;
 
 public:
   Tmpl8::vec3 N; // normal of the plane

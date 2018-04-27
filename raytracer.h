@@ -1,6 +1,8 @@
 #pragma once
 
 class Primitive;
+struct Color;
+struct Material;
 
 namespace Tmpl8
 {
@@ -32,6 +34,10 @@ namespace Tmpl8
     bool IsOccluded(Ray& ray);
     void Render(Camera& camera);
 
+    void Trace(const Ray& ray, Color& out_color);
+    void DirectIllumination(const vec3& I, const vec3& N, Color& out_color);
+    bool IsVisible(const vec3& from, const vec3& to, float t);
+
     Scene* scene;
     static float* zbuffer;
     static vec4 frustum[5];
@@ -45,7 +51,7 @@ namespace Tmpl8
 
     Surface* screen;
 
+    std::vector<Material*> materials;
     std::vector<Primitive*> primitives;
   };
-
 };
