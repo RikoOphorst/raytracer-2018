@@ -4,8 +4,13 @@
 #include "color.h"
 #include "material.h"
 
+#include <algorithm>
+
 float* Raytracer::zbuffer = nullptr;
 vec4 Raytracer::frustum[5];
+
+#undef max
+#undef min
 
 bool IntersectSphere(const vec3& rayO, const vec3& rayD)
 {
@@ -64,10 +69,17 @@ void Raytracer::Init(Surface* scr)
   screen = scr;
 
   materials.push_back(new Material(false, Color::kBlue));
+  materials.push_back(new Material(true, Color::kCyan));
 
   primitives.push_back(new Sphere(0, vec3(0.0f, 1.0f, -50.0f), 1.0f));
-  primitives.push_back(new Plane(0, vec3(0.0f, -1.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f)));
-  primitives.push_back(new Triangle(0, vec3(10.0f, 20.0f, -50.0f), vec3(10.0f, 0.0f, -50.0f), vec3(20.0f, 0.0f, -50.0f), vec3(0.0f, 0.0f, 1.0f)));
+  primitives.push_back(new Triangle(
+    0, 
+    vec3(-4, 6, -50.0f), 
+    vec3(-9, 3, -50.0f), 
+    vec3(-9, 9, -50.0f), 
+    vec3(0.0f, 0.0f, 1.0f)
+  ));
+  primitives.push_back(new Plane(1, vec3(0.0f, -1.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f)));
 }
 
 //------------------------------------------------------------------------------------------------------
@@ -124,7 +136,7 @@ void Raytracer::Render(Camera& camera)
 }
 
 //------------------------------------------------------------------------------------------------------
-void Tmpl8::Raytracer::Trace(const Ray& ray, Color& out_color)
+void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color)
 {
   int i;
   int num_primitives = primitives.size();
@@ -136,7 +148,6 @@ void Tmpl8::Raytracer::Trace(const Ray& ray, Color& out_color)
   for (i = 0; i < num_primitives; ++i)
   {
     hit = false;
-    t = zdepth;
     primitives[i]->Intersect(ray, hit, t, I, N);
 
     if (hit)
@@ -149,7 +160,7 @@ void Tmpl8::Raytracer::Trace(const Ray& ray, Color& out_color)
     }
     else
     {
-      out_color = Color::kBlack;
+      out_color = Color::kEigengrau;
     }
   }
 }
@@ -167,14 +178,23 @@ void Tmpl8::Raytracer::DirectIllumination(const vec3& I, const vec3& N, Color& o
   }
   else
   {
-    out_color = Color(vec3(1.0f, 1.0f, 1.0f) * dot(N, L), true);
+    float NdotL = dot(N, L);
+    if (NdotL <= 0.0f)
+    {
+      out_color = Color::kBlack;
+    }
+    else
+    {
+      NdotL = std::max(NdotL, 0.0f);
+      out_color = Color(vec3(1.0f, 1.0f, 1.0f) * NdotL, true);
+    }
   }
 }
 
 //------------------------------------------------------------------------------------------------------
 bool Tmpl8::Raytracer::IsVisible(const vec3& from, const vec3& direction, float t)
 {
-  Ray ray(from, direction, 1000.0f);
+  Ray ray(from, direction, 10000.0f);
 
   int i;
   int num_primitives = primitives.size();

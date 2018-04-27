@@ -1,5 +1,7 @@
 #include "precomp.h" // include (only) this in every .cpp file
 
+#include "color.h"
+
 Raytracer raytracer;
 Camera camera;
 vec3 position;
@@ -43,6 +45,6 @@ void Game::HandleInput( float dt )
 void Game::Tick( float deltaTime )
 {
 	HandleInput( 1 );
-	screen->Clear( 0 );
+	screen->Clear( Color::kRed.color_byte );
 	raytracer.Render( camera );
 }

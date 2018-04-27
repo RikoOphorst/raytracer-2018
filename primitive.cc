@@ -81,7 +81,7 @@ void Triangle::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t, Tmp
 
   q = cross(s, edge1);
   v = f * dot(ray.D, q);
-  if (v < 0.0f || u + v > 1.0f)
+  if (v < 0.0 || u + v > 1.0)
   {
     out_hit = false;
     return;
@@ -92,7 +92,7 @@ void Triangle::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t, Tmp
   if (t > EPSILON) // ray intersection
   {
     out_N = N;
-    out_I = ray.O + ray.D * (t - 0.0001f);
+    out_I = ray.O + ray.D * (t - 0.001f);
     out_t = t;
     out_hit = true;
   }
@@ -154,7 +154,7 @@ void Sphere::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t, Tmpl8
   {
     out_hit = true;
     out_t = t;
-    out_I = ray.O + ray.D * (out_t - 0.0001f);
+    out_I = ray.O + ray.D * (out_t);
     out_N = (out_I - c);
     out_N.normalize();
     return;
@@ -235,21 +235,38 @@ void Plane::Init(const Tmpl8::vec3& origin, const Tmpl8::vec3& normal)
 //------------------------------------------------------------------------------------------------------
 void Plane::Intersect(const Tmpl8::Ray& ray, bool& out_hit, float& out_t, Tmpl8::vec3& out_I, Tmpl8::vec3& out_N)
 {
+  //float denom = dot(N, ray.D);
+  //if (abs(denom) > 1e-6)
+  //{
+  //  vec3 d = c - ray.O;
+  //  float t = dot(d, N) / denom;
+  //  out_hit = (t < ray.t && t >= 0.0f);
+  // 
+  //  if (out_hit)
+  //  {
+  //    out_I = ray.O + ray.D * (t - 0.001f);
+  //    out_N = N;
+  //    out_t = t;
+  //  }
+  //  
+  //  return;
+  //}
+  //
+  //out_hit = false;
+
+  //float denom = normal.dot(ray.direction);
   float denom = dot(N, ray.D);
-  if (abs(denom) > 1e-6)
+  if (abs(denom) > 0.0001f) // your favorite epsilon
   {
-    vec3 d = c - ray.O;
-    float t = dot(d, N) / denom;
-    out_hit = (t < ray.t && t >= 0.0f);
-   
-    if (out_hit)
+    float t = dot((c - ray.O),N) / denom;
+    if (t >= 0.0001f)
     {
-      out_I = ray.O + ray.D * (t - 0.0001f);
+      out_I = ray.O + ray.D * t;
       out_N = N;
       out_t = t;
+      out_hit = true;
+      return;
     }
-    
-    return;
   }
 
   out_hit = false;

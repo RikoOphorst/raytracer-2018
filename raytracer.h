@@ -34,7 +34,7 @@ namespace Tmpl8
     bool IsOccluded(Ray& ray);
     void Render(Camera& camera);
 
-    void Trace(const Ray& ray, Color& out_color);
+    void Trace(Ray& ray, Color& out_color);
     void DirectIllumination(const vec3& I, const vec3& N, Color& out_color);
     bool IsVisible(const vec3& from, const vec3& to, float t);
 
