@@ -1,7 +1,7 @@
 #include "precomp.h"
 #include "color.h"
 
-Color const Color::kRed = Color(221u, 0u, 0u, 255u);
+Color const Color::kRed = Color(255u, 0u, 0u, 255u);
 Color const Color::kGreen = Color(136u, 255u, 0u, 255u);
 Color const Color::kGrassGreen = Color(61u, 74u, 48u, 255u);
 Color const Color::kLime = Color(123u, 203u, 79u, 255u);

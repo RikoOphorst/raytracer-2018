@@ -1,28 +1,12 @@
 #pragma once
 
-class Primitive;
+struct Primitive;
 struct Color;
 struct Material;
+class Ray;
 
 namespace Tmpl8
 {
-  // -----------------------------------------------------------
-  // Raytracer struct
-  // generic ray
-  // -----------------------------------------------------------
-  class Ray
-  {
-  public:
-    // constructor / destructor
-    Ray(vec3 origin, vec3 direction, float distance) : O(origin), D(direction), t(distance) {}
-    // methods
-    void Intersect(Mesh* mesh, int triIdx);
-
-    // data members
-    vec3 O, D;
-    float t;
-  };
-
   class Raytracer
   {
   public:

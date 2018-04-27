@@ -3,6 +3,7 @@
 #include "primitive.h"
 #include "color.h"
 #include "material.h"
+#include "ray.h"
 
 #include <algorithm>
 
@@ -72,13 +73,16 @@ void Raytracer::Init(Surface* scr)
   materials.push_back(new Material(true, Color::kCyan));
 
   primitives.push_back(new Sphere(0, vec3(0.0f, 1.0f, -50.0f), 1.0f));
-  primitives.push_back(new Triangle(
-    0, 
-    vec3(-4, 6, -50.0f), 
-    vec3(-9, 3, -50.0f), 
-    vec3(-9, 9, -50.0f), 
-    vec3(0.0f, 0.0f, 1.0f)
-  ));
+  
+  primitives.push_back(
+    new Triangle(
+      0, 
+      vec3(4, 6, -50.0f), 
+      vec3(9, 3, -50.0f), 
+      vec3(9, 9, -50.0f)
+    )
+  );
+
   primitives.push_back(new Plane(1, vec3(0.0f, -1.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f)));
 }
 
@@ -128,6 +132,7 @@ void Raytracer::Render(Camera& camera)
       ray.O = camera.GetPosition();
       ray.D = normalize(sp - camera.GetPosition());
       ray.t = zdepth;
+      ray.primitive = nullptr;
 
       Trace(ray, color);
       screen->Plot(u, v, color.color_byte);
@@ -140,45 +145,71 @@ void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color)
 {
   int i;
   int num_primitives = primitives.size();
-  bool hit;
-  float t;
-  vec3 I;
-  vec3 N;
   
   for (i = 0; i < num_primitives; ++i)
   {
-    hit = false;
-    primitives[i]->Intersect(ray, hit, t, I, N);
-
-    if (hit)
+    if (primitives[i]->type == PrimitiveType::kSphere)
     {
-      DirectIllumination(I, N, out_color);
-
-      out_color = out_color * materials[primitives[i]->mat]->diffuse;
-
-      break;
+      ray.Intersect(static_cast<Sphere*>(primitives[i]));
     }
-    else
+    if (primitives[i]->type == PrimitiveType::kPlane)
     {
-      out_color = Color::kEigengrau;
+      ray.Intersect(static_cast<Plane*>(primitives[i]));
     }
+    if (primitives[i]->type == PrimitiveType::kTriangle)
+    {
+      ray.Intersect(static_cast<Triangle*>(primitives[i]));
+    }
+  }
+
+  if (ray.primitive != nullptr)
+  {
+    vec3 point = ray.O + ray.D * (ray.t - EPSILON);
+    vec3 normal;
+    
+    if (ray.primitive->type == PrimitiveType::kSphere)
+    {
+      normal = static_cast<Sphere*>(ray.primitive)->NormalAt(point);
+    }
+    
+    if (ray.primitive->type == PrimitiveType::kPlane)
+    {
+      normal = static_cast<Plane*>(ray.primitive)->NormalAt(point);
+    }
+    
+    if (ray.primitive->type == PrimitiveType::kTriangle)
+    {
+      normal = static_cast<Triangle*>(ray.primitive)->NormalAt(point);
+    }
+
+    DirectIllumination(
+      point, 
+      normal, 
+      out_color
+    );
+
+    out_color = out_color * materials[ray.primitive->mat]->diffuse;
+  }
+  else
+  {
+    out_color = Color::kEigengrau;
   }
 }
 
 //------------------------------------------------------------------------------------------------------
-void Tmpl8::Raytracer::DirectIllumination(const vec3& I, const vec3& N, Color& out_color)
+void Tmpl8::Raytracer::DirectIllumination(const vec3& point, const vec3& normal, Color& out_color)
 {
-  vec3 L = vec3(0.0f, 5.0f, -40.0f) - I;
+  vec3 L = vec3(0.0f, 5.0f, -40.0f) - point;
   float dist = L.length();
   L.normalize();
 
-  if (!IsVisible(I, L, dist))
+  if (!IsVisible(point, L, dist))
   {
     out_color = Color::kBlack;
   }
   else
   {
-    float NdotL = dot(N, L);
+    float NdotL = dot(normal, L);
     if (NdotL <= 0.0f)
     {
       out_color = Color::kBlack;
@@ -194,21 +225,29 @@ void Tmpl8::Raytracer::DirectIllumination(const vec3& I, const vec3& N, Color& o
 //------------------------------------------------------------------------------------------------------
 bool Tmpl8::Raytracer::IsVisible(const vec3& from, const vec3& direction, float t)
 {
-  Ray ray(from, direction, 10000.0f);
-
   int i;
   int num_primitives = primitives.size();
-  bool hit;
-  vec3 I0;
-  vec3 N;
-  float t0;
 
   for (i = 0; i < num_primitives; ++i)
   {
-    hit = false;
-    primitives[i]->Intersect(ray, hit, t0, I0, N);
+    Ray ray(from, direction, t);
+
+    if (primitives[i]->type == PrimitiveType::kSphere)
+    {
+      ray.Intersect(static_cast<Sphere*>(primitives[i]));
+    }
+
+    if (primitives[i]->type == PrimitiveType::kPlane)
+    {
+      ray.Intersect(static_cast<Plane*>(primitives[i]));
+    }
+
+    if (primitives[i]->type == PrimitiveType::kTriangle)
+    {
+      ray.Intersect(static_cast<Triangle*>(primitives[i]));
+    }
     
-    if (hit)
+    if (ray.t != t)
     {
       return false;
     }

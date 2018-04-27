@@ -232,6 +232,7 @@
     <ClCompile Include="material.cc" />
     <ClCompile Include="primitive.cc" />
     <ClCompile Include="rasterizer.cpp" />
+    <ClCompile Include="ray.cc" />
     <ClCompile Include="raytracer.cpp" />
     <ClCompile Include="surface.cpp" />
     <ClCompile Include="template.cpp">
@@ -247,6 +248,7 @@
     <ClInclude Include="precomp.h" />
     <ClInclude Include="primitive.h" />
     <ClInclude Include="rasterizer.h" />
+    <ClInclude Include="ray.h" />
     <ClInclude Include="raytracer.h" />
     <ClInclude Include="surface.h" />
     <ClInclude Include="template.h" />
