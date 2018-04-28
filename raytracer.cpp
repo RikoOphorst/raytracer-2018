@@ -71,8 +71,10 @@ void Raytracer::Init(Surface* scr)
 
   materials.push_back(new Material(false, Color::kBlue));
   materials.push_back(new Material(true, Color::kCyan));
+  materials.push_back(new Material(true, Color::kWhite));
 
   primitives.push_back(new Sphere(0, vec3(0.0f, 1.0f, -50.0f), 1.0f));
+  primitives.push_back(new Sphere(2, vec3(15.0f, 1.5f, -55.0f), 5.0f));
   
   primitives.push_back(
     new Triangle(
@@ -83,7 +85,7 @@ void Raytracer::Init(Surface* scr)
     )
   );
 
-  primitives.push_back(new Plane(1, vec3(0.0f, -1.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f)));
+  primitives.push_back(new Plane(0, vec3(0.0f, -1.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f)));
 }
 
 //------------------------------------------------------------------------------------------------------
@@ -166,29 +168,42 @@ void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color)
   {
     vec3 point = ray.O + ray.D * (ray.t - EPSILON);
     vec3 normal;
-    
+
     if (ray.primitive->type == PrimitiveType::kSphere)
     {
       normal = static_cast<Sphere*>(ray.primitive)->NormalAt(point);
     }
-    
+
     if (ray.primitive->type == PrimitiveType::kPlane)
     {
       normal = static_cast<Plane*>(ray.primitive)->NormalAt(point);
     }
-    
+
     if (ray.primitive->type == PrimitiveType::kTriangle)
     {
       normal = static_cast<Triangle*>(ray.primitive)->NormalAt(point);
     }
 
-    DirectIllumination(
-      point, 
-      normal, 
-      out_color
-    );
+    if (materials[ray.primitive->mat]->is_mirror)
+    {
+      Ray secondary_ray(point, ray.D - 2 * (dot(ray.D, normal)) * normal, zdepth);
 
-    out_color = out_color * materials[ray.primitive->mat]->diffuse;
+      Color reflection_color;
+
+      Trace(secondary_ray, reflection_color);
+      
+      out_color = reflection_color * materials[ray.primitive->mat]->diffuse;
+    }
+    else
+    {
+      DirectIllumination(
+        point,
+        normal,
+        out_color
+      );
+
+      out_color = out_color * materials[ray.primitive->mat]->diffuse;
+    }
   }
   else
   {
@@ -217,7 +232,7 @@ void Tmpl8::Raytracer::DirectIllumination(const vec3& point, const vec3& normal,
     else
     {
       NdotL = std::max(NdotL, 0.0f);
-      out_color = Color(vec3(1.0f, 1.0f, 1.0f) * NdotL, true);
+      out_color = Color(vec3(1.0f, 1.0f, 1.0f) * 10.0f * NdotL * (1.0f / (dist * dist)), true);
     }
   }
 }
