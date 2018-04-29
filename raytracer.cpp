@@ -7,25 +7,13 @@
 
 #include <algorithm>
 
+#include <DirectXMath.h>
+
 float* Raytracer::zbuffer = nullptr;
 vec4 Raytracer::frustum[5];
 
 #undef max
 #undef min
-
-bool IntersectSphere(const vec3& rayO, const vec3& rayD)
-{
-  vec3 sphereOrigin(0, 0, 10);
-  float sphereR2 = 0.25f;
-
-  vec3 c = sphereOrigin - rayO;
-  float t = dot(c, rayD);
-  vec3 q = c - t * rayD;
-  float p2 = dot(q, q);
-  if (p2 > sphereR2) return false;
-  t -= sqrt(sphereR2 - p2);
-  return t < 0;
-}
 
 //------------------------------------------------------------------------------------------------------
 Raytracer::Raytracer() :
@@ -68,24 +56,6 @@ void Raytracer::Init(Surface* scr)
   // initialize scene
   (scene = new Scene())->root = new SGNode();
   screen = scr;
-
-  materials.push_back(new Material(false, Color::kBlue));
-  materials.push_back(new Material(true, Color::kCyan));
-  materials.push_back(new Material(true, Color::kWhite));
-
-  primitives.push_back(new Sphere(0, vec3(0.0f, 1.0f, -50.0f), 1.0f));
-  primitives.push_back(new Sphere(2, vec3(15.0f, 1.5f, -55.0f), 5.0f));
-  
-  primitives.push_back(
-    new Triangle(
-      0, 
-      vec3(4, 6, -50.0f), 
-      vec3(9, 3, -50.0f), 
-      vec3(9, 9, -50.0f)
-    )
-  );
-
-  primitives.push_back(new Plane(0, vec3(0.0f, -1.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f)));
 }
 
 //------------------------------------------------------------------------------------------------------
@@ -101,38 +71,72 @@ bool Raytracer::IsOccluded(Ray& ray)
 }
 
 //------------------------------------------------------------------------------------------------------
+void Tmpl8::Raytracer::LoadNode(SGNode* node, const mat4& transform)
+{
+  mat4 transformMatrix = transform * node->localTransform;
+
+  if (node->GetType() == SGNode::SG_MESH)
+  {
+    Mesh& mesh = *reinterpret_cast<Mesh*>(node);
+
+    for (int i = 0; i < mesh.tris; i++)
+    {
+      //Triangle* triangle = new Triangle(
+      //  0,
+      //  (transformMatrix * vec4(mesh.pos[mesh.tri[i] + 0], 1.0f)).xyz,
+      //  (transformMatrix * vec4(mesh.pos[mesh.tri[i] + 1], 1.0f)).xyz,
+      //  (transformMatrix * vec4(mesh.pos[mesh.tri[i] + 2], 1.0f)).xyz,
+      //  mesh.norm[mesh.tri[i]]
+      //);
+      //
+      //primitives.push_back(triangle);
+    }
+  }
+
+  for (int i = 0; i < node->child.size(); i++)
+  {
+    LoadNode(node->child[i], transform * node->localTransform);
+  }
+}
+
+//------------------------------------------------------------------------------------------------------
 void Raytracer::Render(Camera& camera)
 {
-  zdepth = 1500.0f;
-  d = 5.0f;
+  zdepth = 150000.0f;
+  d = 2.0f;
 
-  p0 = camera.GetPosition() + (camera.transform * vec4(-SCRASPECT,  1, -d, 0)).xyz;
-  p1 = camera.GetPosition() + (camera.transform * vec4( SCRASPECT,  1, -d, 0)).xyz;
-  p2 = camera.GetPosition() + (camera.transform * vec4(-SCRASPECT, -1, -d, 0)).xyz;
+  XMVECTOR camera_position = XMVectorSet(camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z, 1.0f);
+
+  vec3 p0t = camera.GetPosition() + (camera.transform * vec4(-SCRASPECT,  1, -d, 0)).xyz;
+  vec3 p1t = camera.GetPosition() + (camera.transform * vec4( SCRASPECT,  1, -d, 0)).xyz;
+  vec3 p2t = camera.GetPosition() + (camera.transform * vec4(-SCRASPECT, -1, -d, 0)).xyz;
+
+  p0 = XMVectorSet(p0t.x, p0t.y, p0t.z, 1.0f);
+  p1 = XMVectorSet(p1t.x, p1t.y, p1t.z, 1.0f);
+  p2 = XMVectorSet(p2t.x, p2t.y, p2t.z, 1.0f);
 
   float wr = 1.0f / SCRWIDTH;
   float hr = 1.0f / SCRHEIGHT;
 
-  Ray ray(camera.GetPosition(), p0, zdepth);
+  vec3 camPos = camera.GetPosition();
+
+  Ray ray(camera_position, XMVectorZero(), zdepth);
   Color color;
 
+  ray_counter = 0;
   for (int u = 0; u < SCRWIDTH; u++)
   {
     for (int v = 0; v < SCRHEIGHT; v++)
     {
-      vec3 sp; // screen position
+      XMVECTOR sp; // screen position
 
       float uu, vv;
       uu = u * wr;
       vv = v * hr;
 
-      sp = p0 + (uu * (p1 - p0)) + (vv * (p2 - p0));
+      sp = p0 + XMVectorScale((p1 - p0), uu) + XMVectorScale((p2 - p0), vv);
 
-      vec3 D; // ray direction
-      D = normalize(sp - camera.GetPosition());
-
-      ray.O = camera.GetPosition();
-      ray.D = normalize(sp - camera.GetPosition());
+      ray.D = XMVectorSetW(XMVector3Normalize(sp - ray.O), 0.0f);
       ray.t = zdepth;
       ray.primitive = nullptr;
 
@@ -140,11 +144,17 @@ void Raytracer::Render(Camera& camera)
       screen->Plot(u, v, color.color_byte);
     }
   }
+
+  char num_rays[256];
+  sprintf_s(num_rays, 256, "Number of rays: %i", ray_counter);
+  screen->Print(num_rays, 0, 30, Color::kRed.color_byte);
 }
 
 //------------------------------------------------------------------------------------------------------
-void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color)
+void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color, int ray_depth)
 {
+  ray_counter++;
+
   int i;
   int num_primitives = primitives.size();
   
@@ -152,22 +162,22 @@ void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color)
   {
     if (primitives[i]->type == PrimitiveType::kSphere)
     {
-      ray.Intersect(static_cast<Sphere*>(primitives[i]));
+      ray.Intersect(*static_cast<Sphere*>(primitives[i]));
     }
     if (primitives[i]->type == PrimitiveType::kPlane)
     {
-      ray.Intersect(static_cast<Plane*>(primitives[i]));
+      ray.Intersect(*static_cast<Plane*>(primitives[i]));
     }
     if (primitives[i]->type == PrimitiveType::kTriangle)
     {
-      ray.Intersect(static_cast<Triangle*>(primitives[i]));
+      ray.Intersect(*static_cast<Triangle*>(primitives[i]));
     }
   }
 
   if (ray.primitive != nullptr)
   {
-    vec3 point = ray.O + ray.D * (ray.t - EPSILON);
-    vec3 normal;
+    XMVECTOR point = ray.O + DirectX::XMVectorScale(ray.D, ray.t - EPSILON);
+    XMVECTOR normal;
 
     if (ray.primitive->type == PrimitiveType::kSphere)
     {
@@ -176,21 +186,21 @@ void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color)
 
     if (ray.primitive->type == PrimitiveType::kPlane)
     {
-      normal = static_cast<Plane*>(ray.primitive)->NormalAt(point);
+      normal = XMVectorSetW(static_cast<Plane*>(ray.primitive)->p, 0.0f);
     }
 
     if (ray.primitive->type == PrimitiveType::kTriangle)
     {
-      normal = static_cast<Triangle*>(ray.primitive)->NormalAt(point);
+      normal = static_cast<Triangle*>(ray.primitive)->nv;
     }
 
-    if (materials[ray.primitive->mat]->is_mirror)
+    if (materials[ray.primitive->mat]->is_mirror && ray_depth < 32)
     {
-      Ray secondary_ray(point, ray.D - 2 * (dot(ray.D, normal)) * normal, zdepth);
-
+      Ray secondary_ray(point, XMVector3Normalize(XMVector3Reflect(point, normal)), zdepth);
+    
       Color reflection_color;
-
-      Trace(secondary_ray, reflection_color);
+    
+      Trace(secondary_ray, reflection_color, ray_depth + 1);
       
       out_color = reflection_color * materials[ray.primitive->mat]->diffuse;
     }
@@ -212,57 +222,69 @@ void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color)
 }
 
 //------------------------------------------------------------------------------------------------------
-void Tmpl8::Raytracer::DirectIllumination(const vec3& point, const vec3& normal, Color& out_color)
+void Tmpl8::Raytracer::IntersectScene(Ray& ray, XMVECTOR& out_point, XMVECTOR& out_normal, int& out_material)
 {
-  vec3 L = vec3(0.0f, 5.0f, -40.0f) - point;
-  float dist = L.length();
-  L.normalize();
+  
+}
 
-  if (!IsVisible(point, L, dist))
+//------------------------------------------------------------------------------------------------------
+void Tmpl8::Raytracer::DirectIllumination(const XMVECTOR& point, const XMVECTOR& normal, Color& out_color)
+{
+  XMVECTOR L = XMVectorSet(0.0f, 5.0f, 0.0f, 1.0f) - point;
+  XMVECTOR dist = XMVector3Length(L);
+
+  L = XMVector3Normalize(L);
+
+  if (!IsVisible(point, L, XMVectorGetX(dist)))
   {
     out_color = Color::kBlack;
   }
   else
   {
-    float NdotL = dot(normal, L);
-    if (NdotL <= 0.0f)
+    XMVECTOR NdotL = XMVector3Dot(normal, L);
+    if (XMVectorGetX(NdotL) <= 0.0f)
     {
       out_color = Color::kBlack;
     }
     else
     {
-      NdotL = std::max(NdotL, 0.0f);
-      out_color = Color(vec3(1.0f, 1.0f, 1.0f) * 10.0f * NdotL * (1.0f / (dist * dist)), true);
+      out_color = Color(
+        vec3(1.0f, 1.0f, 1.0f) * 
+        //10.0f * 
+        std::max(XMVectorGetX(NdotL), 0.0f)
+        //* (2.0f / (dist * dist))
+        , true
+      );
     }
   }
 }
 
 //------------------------------------------------------------------------------------------------------
-bool Tmpl8::Raytracer::IsVisible(const vec3& from, const vec3& direction, float t)
+bool Tmpl8::Raytracer::IsVisible(const XMVECTOR& origin, const XMVECTOR& direction, float t)
 {
   int i;
   int num_primitives = primitives.size();
 
   for (i = 0; i < num_primitives; ++i)
   {
-    Ray ray(from, direction, t);
+    Ray ray(origin, direction, t);
 
     if (primitives[i]->type == PrimitiveType::kSphere)
     {
-      ray.Intersect(static_cast<Sphere*>(primitives[i]));
+      ray.Intersect(*static_cast<Sphere*>(primitives[i]));
     }
 
     if (primitives[i]->type == PrimitiveType::kPlane)
     {
-      ray.Intersect(static_cast<Plane*>(primitives[i]));
+      ray.Intersect(*static_cast<Plane*>(primitives[i]));
     }
 
     if (primitives[i]->type == PrimitiveType::kTriangle)
     {
-      ray.Intersect(static_cast<Triangle*>(primitives[i]));
+      ray.Intersect(*static_cast<Triangle*>(primitives[i]));
     }
     
-    if (ray.t != t)
+    if (ray.t < t)
     {
       return false;
     }

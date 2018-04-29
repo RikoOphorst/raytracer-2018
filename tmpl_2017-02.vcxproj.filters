@@ -22,6 +22,7 @@
     <ClCompile Include="color.cc" />
     <ClCompile Include="material.cc" />
     <ClCompile Include="ray.cc" />
+    <ClCompile Include="timer.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="game.h" />
@@ -46,6 +47,7 @@
     <ClInclude Include="color.h" />
     <ClInclude Include="material.h" />
     <ClInclude Include="ray.h" />
+    <ClInclude Include="timer.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="template code">

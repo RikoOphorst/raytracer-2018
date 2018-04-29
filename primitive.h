@@ -28,85 +28,107 @@ struct Primitive
 
 struct Triangle : public Primitive
 {
-  Triangle(int material, const Tmpl8::vec3& point0, const Tmpl8::vec3& point1, const Tmpl8::vec3& point2) :
+  Triangle(int material, const XMVECTOR& point0, const XMVECTOR& point1, const XMVECTOR& point2, const XMVECTOR& normal) :
     Primitive(PrimitiveType::kTriangle, material),
-    p0(point0),
-    p1(point1),
-    p2(point2)
+    p0v(point0),
+    p1v(point1),
+    p2v(point2),
+    nv(normal)
   {
-    center = Tmpl8::vec3(
-      (p0.x + p1.x + p2.x) / 3.0f,
-      (p0.y + p1.y + p2.y) / 3.0f,
-      (p0.z + p1.z + p2.z) / 3.0f
-    );
 
-    normal = normalize(cross(p1 - p0, p2 - p0));
   }
 
-  const Tmpl8::vec3& NormalAt(const vec3& point)
+  Triangle(int material, const XMFLOAT4& point0, const XMFLOAT4& point1, const XMFLOAT4& point2, const XMFLOAT4& normal) :
+    Primitive(PrimitiveType::kTriangle, material),
+    p0f(point0),
+    p1f(point1),
+    p2f(point2),
+    nf(normal)
   {
-    return normal;
+
   }
 
-  Tmpl8::vec3 center;
-  Tmpl8::vec3 p0; // Point 0 of the triangle
-  Tmpl8::vec3 p1; // Point 1 of the triangle
-  Tmpl8::vec3 p2; // Point 2 of the triangle
-  Tmpl8::vec3 normal; // Normal of the triangle
+  union
+  {
+    XMVECTOR p0v; // Point 0 of the triangle
+    XMFLOAT4 p0f; // Point 0 of the triangle
+  };
+
+  union
+  {
+    XMVECTOR p1v; // Point 1 of the triangle
+    XMFLOAT4 p1f; // Point 1 of the triangle
+  };
+
+  union
+  {
+    XMVECTOR p2v; // Point 2 of the triangle
+    XMFLOAT4 p2f; // Point 2 of the triangle
+  };
+
+  union
+  {
+    XMVECTOR nv; // Normal of the triangle
+    XMFLOAT4 nf; // Normal of the triangle
+  };
 };
 
 struct Sphere : public Primitive
 {
 public:
-  Sphere(int material, const Tmpl8::vec3& pos, float radius) :
+  Sphere(int material, const XMFLOAT3& pos, float radius) :
     Primitive(PrimitiveType::kSphere, material),
-    center(pos),
-    radius(radius),
-    radius2(radius * radius)
+    sphere(pos, radius)
   {
-
+    
   }
 
-  vec3 NormalAt(const vec3& point)
+  XMVECTOR NormalAt(const XMVECTOR& point)
   {
-    return normalize(point - center);
+    return XMVectorSetW(XMVector3Normalize(point - XMVectorSet(sphere.Center.x, sphere.Center.y, sphere.Center.z, 1.0f)), 0.0f);
   }
 
-  Tmpl8::vec3 center; // Centroid of the sphere
-  float radius; // Radius of the sphere
-  float radius2; // Radius of the sphere squared
+  BoundingSphere sphere;
 };
 
 struct Plane : public Primitive
 {
-  Plane(int material, const Tmpl8::vec3& origin, const Tmpl8::vec3& normal) :
+  Plane(int material, const XMVECTOR& plane) :
     Primitive(PrimitiveType::kPlane, material),
-    center(origin),
-    normal(normalize(normal))
+    p(plane)
   {
 
   }
 
-  const vec3& NormalAt(const Tmpl8::vec3& point)
+  Plane(int material, const XMFLOAT4& plane) :
+    Primitive(PrimitiveType::kPlane, material),
+    pf(plane)
   {
-    return normal;
+
   }
 
-  Tmpl8::vec3 center; // center / origin of the plane
-  Tmpl8::vec3 normal; // normal of the plane
+  union
+  {
+    XMVECTOR p; // center / origin of the plane
+    XMFLOAT4 pf; // center / origin of the plane
+  };
 };
 
 struct AABB : public Primitive
 {
-  AABB(int material, const Tmpl8::vec3& min, const Tmpl8::vec3& max) :
-    Primitive(PrimitiveType::kAABB, material),
-    min(min),
-    max(max)
+  AABB(int material, const XMVECTOR& center, const XMVECTOR& extents) :
+    Primitive(PrimitiveType::kAABB, material)
   {
-    center = (min + max) * 0.5f;
+    XMStoreFloat3(&box.Center, center);
+    XMStoreFloat3(&box.Extents, extents);
   }
 
-  Tmpl8::vec3 center; // center of the AABB
-  Tmpl8::vec3 min; // min point of the AABB
-  Tmpl8::vec3 max; // max point of the AABB
+  AABB(int material, const XMFLOAT3& center, const XMFLOAT3& extents) :
+    Primitive(PrimitiveType::kAABB, material),
+    box(center, extents)
+  {
+    
+  }
+
+  BoundingBox box;
 };

@@ -11,15 +11,26 @@ struct Primitive;
 class Ray
 {
 public:
-  Ray(const Tmpl8::vec3& origin, const Tmpl8::vec3& direction, float distance);
+  Ray(const XMVECTOR& origin, const XMVECTOR& direction, float distance);
+  Ray(const XMFLOAT4& origin, const XMFLOAT4& direction, float distance);
 
-  void Intersect(Tmpl8::Mesh* mesh, int triIdx);
-  void Intersect(Sphere* sphere);
-  void Intersect(Plane* plane);
-  void Intersect(Triangle* triangle);
-  void Intersect(AABB* aabb);
+  void Intersect(Sphere& sphere);
+  void Intersect(Plane& plane);
+  void Intersect(Triangle& triangle);
+  void Intersect(AABB& aabb);
   
-  Tmpl8::vec3 O, D;
+  union
+  {
+    XMVECTOR O;
+    XMFLOAT4 Of;
+  };
+
+  union
+  {
+    XMVECTOR D;
+    XMFLOAT4 Df;
+  };
+
   float t;
   Primitive* primitive;
 };

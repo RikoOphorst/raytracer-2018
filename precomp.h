@@ -10,7 +10,7 @@
 #define SCRHEIGHTF  512.0f
 #define SCRASPECT   SCRWIDTHF / SCRHEIGHTF
 // #define FULLSCREEN
-// #define ADVANCEDGL	// faster if your system supports it
+#define ADVANCEDGL	// faster if your system supports it
 
 #include <inttypes.h>
 extern "C" 
@@ -36,8 +36,15 @@ extern "C"
 #include <assert.h>
 #include <vector>
 
+#define _XM_SSE4_INTRINSICS_
+
+#include <DirectXMath.h>
+#include <DirectXCollision.h>
+#include <DirectXPackedVector.h>
+
 using namespace std;
 using namespace Tmpl8;
+using namespace DirectX;
 
 #include "rasterizer.h"
 #include "raytracer.h"

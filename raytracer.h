@@ -18,18 +18,21 @@ namespace Tmpl8
     bool IsOccluded(Ray& ray);
     void Render(Camera& camera);
 
-    void Trace(Ray& ray, Color& out_color);
-    void DirectIllumination(const vec3& I, const vec3& N, Color& out_color);
-    bool IsVisible(const vec3& from, const vec3& to, float t);
+    void LoadNode(SGNode* node, const mat4& transform);
+
+    void Trace(Ray& ray, Color& out_color, int ray_depth = 0);
+    void IntersectScene(Ray& ray, XMVECTOR& out_point, XMVECTOR& out_normal, int& out_material);
+    void DirectIllumination(const XMVECTOR& I, const XMVECTOR& N, Color& out_color);
+    bool IsVisible(const XMVECTOR& origin, const XMVECTOR& direction, float t);
 
     Scene* scene;
     static float* zbuffer;
     static vec4 frustum[5];
 
     float d; // distance of the screen plane from the E point
-    vec3 p0; // top left of screen
-    vec3 p1; // top right of screen
-    vec3 p2; // bottom left of screen
+    XMVECTOR p0; // top left of screen
+    XMVECTOR p1; // top right of screen
+    XMVECTOR p2; // bottom left of screen
 
     float zdepth; // zdepth
 
@@ -37,5 +40,7 @@ namespace Tmpl8
 
     std::vector<Material*> materials;
     std::vector<Primitive*> primitives;
+
+    int ray_counter = 0;
   };
 };

@@ -4,7 +4,7 @@
 #include "primitive.h"
 
 //------------------------------------------------------------------------------------------------------
-Ray::Ray(const Tmpl8::vec3& origin, const Tmpl8::vec3& direction, float distance) :
+Ray::Ray(const XMVECTOR& origin, const XMVECTOR& direction, float distance) :
   O(origin),
   D(direction),
   t(distance),
@@ -14,90 +14,64 @@ Ray::Ray(const Tmpl8::vec3& origin, const Tmpl8::vec3& direction, float distance
 }
 
 //------------------------------------------------------------------------------------------------------
-void Ray::Intersect(Tmpl8::Mesh* mesh, int triIdx)
+Ray::Ray(const XMFLOAT4& origin, const XMFLOAT4& direction, float distance) :
+  Of(origin),
+  Df(direction),
+  t(distance),
+  primitive(nullptr)
 {
 
 }
 
 //------------------------------------------------------------------------------------------------------
-void Ray::Intersect(Sphere* sphere)
+void Ray::Intersect(Sphere& sphere)
 {
-  Tmpl8::vec3 c = sphere->center - O;
-  float dist = dot(c, D);
-  Tmpl8::vec3 q = c - dist * D;
-  float p2 = dot(q, q);
-
-  if (p2 > sphere->radius2)
+  float dist = t;
+  if (sphere.sphere.Intersects(O, D, dist) && dist < t)
   {
-    return;
-  }
-
-  dist -= sqrt(sphere->radius2 - p2);
-
-  if (dist < t && dist > 0)
-  {
-    primitive = sphere;
+    primitive = &sphere;
     t = dist;
-    return;
   }
 }
 
 //------------------------------------------------------------------------------------------------------
-void Ray::Intersect(Plane* plane)
+void Ray::Intersect(Plane& plane)
 {
-  float denom = dot(plane->normal, D);
-  if (abs(denom) > EPSILON)
+  XMVECTOR planeNormal = XMVectorSet(plane.pf.x, plane.pf.y, plane.pf.z, 0.0f);
+
+  XMVECTOR denom = XMVector3Dot(planeNormal, D);
+  if (abs(XMVectorGetX(denom)) > EPSILON)
   {
-    float dist = dot((plane->center - O), plane->normal) / denom;
-    if (dist < t && dist >= EPSILON)
+    XMVECTOR center = XMVectorSet(plane.pf.x, plane.pf.y, plane.pf.z, 1.0f) * plane.pf.w;
+
+    XMVECTOR dist = XMVector3Dot((center - O), planeNormal) / denom;
+    
+    if (XMVectorGetX(dist) < t && XMVectorGetX(dist) >= EPSILON)
     {
-      primitive = plane;
-      t = dist;
+      primitive = &plane;
+      t = XMVectorGetX(dist);
     }
   }
 }
 
 //------------------------------------------------------------------------------------------------------
-void Ray::Intersect(Triangle* triangle)
+void Ray::Intersect(Triangle& triangle)
 {
-  Tmpl8::vec3 edge1, edge2, h, s, q;
-  float a, f, u, v;
-  edge1 = triangle->p1 - triangle->p0;
-  edge2 = triangle->p2 - triangle->p0;
-  h = cross(D, edge2);
-  a = dot(edge1, h);
-
-  if (a > -EPSILON && a < EPSILON)
+  float dist = t;
+  if (TriangleTests::Intersects(O, D, triangle.p0v, triangle.p1v, triangle.p2v, dist) && dist < t)
   {
-    return;
-  }
-
-  f = 1 / a;
-  s = O - triangle->p0;
-  u = f * (dot(s, h));
-  if (u < 0.0f || u > 1.0f)
-  {
-    return;
-  }
-
-  q = cross(s, edge1);
-  v = f * dot(D, q);
-  if (v < 0.0f || u + v > 1.0f)
-  {
-    return;
-  }
-
-  // At this stage we can compute t to find out where the intersection point is on the line.
-  float dist = f * dot(edge2, q);
-  if (dist > EPSILON && dist < t) // ray intersection
-  {
-    primitive = triangle;
+    primitive = &triangle;
     t = dist;
   }
 }
 
 //------------------------------------------------------------------------------------------------------
-void Ray::Intersect(AABB* aabb)
+void Ray::Intersect(AABB& aabb)
 {
-
+  float dist = t;
+  if (aabb.box.Intersects(O, D, dist) && dist < t)
+  {
+    primitive = &aabb;
+    t = dist;
+  }
 }
