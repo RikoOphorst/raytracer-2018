@@ -4,9 +4,16 @@ struct Sphere;
 struct Plane;
 struct Triangle;
 struct AABB;
-struct Primitive;
 
 #define EPSILON (0.0001f)
+
+enum class PrimitiveType
+{
+  kAABB,
+  kPlane,
+  kSphere,
+  kTriangle
+};
 
 class Ray
 {
@@ -32,5 +39,6 @@ public:
   };
 
   float t;
-  Primitive* primitive;
+  void* primitive;
+  int primitive_type;
 };

@@ -1,6 +1,9 @@
 #pragma once
 
-struct Primitive;
+struct Plane;
+struct Sphere;
+struct AABB;
+struct Triangle;
 struct Color;
 struct Material;
 struct PointLight;
@@ -22,7 +25,7 @@ namespace Tmpl8
     void LoadNode(SGNode* node, const mat4& transform);
 
     void Trace(Ray& ray, Color& out_color, int ray_depth = 0);
-    void IntersectScene(Ray& ray, XMVECTOR& out_point, XMVECTOR& out_normal, int& out_material);
+    bool IntersectScene(Ray& ray, XMVECTOR& out_point, XMVECTOR& out_normal, int& out_material);
     void DirectIllumination(const XMVECTOR& I, const XMVECTOR& N, Color& out_color);
     bool IsVisible(const XMVECTOR& origin, const XMVECTOR& direction, float t);
     int AddPointLight(const XMFLOAT3& pos, const Color& color);
@@ -41,11 +44,21 @@ namespace Tmpl8
     Surface* screen;
 
     std::vector<Material*> materials;
-    std::vector<Primitive*> primitives;
+
+    Plane* planes;
+    int max_planes, num_planes;
+
+    Sphere* spheres;
+    int max_spheres, num_spheres;
+
+    AABB* aabbs;
+    int max_aabbs, num_aabbs;
+
+    Triangle* triangles;
+    int max_triangles, num_triangles;
 
     PointLight* point_lights;
-    int num_point_lights;
-    int max_point_lights;
+    int num_point_lights, max_point_lights;
 
     int ray_counter = 0;
   };

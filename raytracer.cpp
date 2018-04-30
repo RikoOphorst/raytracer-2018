@@ -10,6 +10,8 @@
 
 #include <DirectXMath.h>
 
+#define MAX_RAY_DEPTH 32
+
 float* Raytracer::zbuffer = nullptr;
 vec4 Raytracer::frustum[5];
 
@@ -61,6 +63,22 @@ void Raytracer::Init(Surface* scr)
   max_point_lights = 20;
   num_point_lights = 0;
   point_lights = new PointLight[max_point_lights];
+
+  max_planes = 50;
+  num_planes = 0;
+  planes = new Plane[max_planes];
+
+  max_spheres = 1000;
+  num_spheres = 0;
+  spheres = new Sphere[max_spheres];
+
+  max_triangles = 10000000;
+  num_triangles = 0;
+  triangles = new Triangle[max_triangles];
+
+  max_aabbs = 1000;
+  num_aabbs = 0;
+  aabbs = new AABB[max_aabbs];
 }
 
 //------------------------------------------------------------------------------------------------------
@@ -161,57 +179,20 @@ void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color, int ray_depth)
 {
   ray_counter++;
 
-  int i;
-  int num_primitives = primitives.size();
-  
-  for (i = 0; i < num_primitives; ++i)
+  XMVECTOR point, normal;
+  int material;
+
+  if (IntersectScene(ray, point, normal, material) && ray_depth < MAX_RAY_DEPTH)
   {
-    if (primitives[i]->type == PrimitiveType::kSphere)
+    if (materials[material]->is_mirror)
     {
-      ray.Intersect(*static_cast<Sphere*>(primitives[i]));
-    }
-    if (primitives[i]->type == PrimitiveType::kPlane)
-    {
-      ray.Intersect(*static_cast<Plane*>(primitives[i]));
-    }
-    if (primitives[i]->type == PrimitiveType::kTriangle)
-    {
-      ray.Intersect(*static_cast<Triangle*>(primitives[i]));
-    }
-  }
+      Ray secondary_ray(point, XMVector3Normalize(XMVector3Reflect(ray.D, normal)), zdepth);
 
-  if (ray.primitive != nullptr)
-  {
-    XMVECTOR point = ray.O + DirectX::XMVectorScale(XMVector3Normalize(ray.D), ray.t - 0.001f);
-    XMVECTOR normal;
+      Color reflection_color;
 
-    if (ray.primitive->type == PrimitiveType::kSphere)
-    {
-      normal = static_cast<Sphere*>(ray.primitive)->NormalAt(point);
-    }
+      Trace(secondary_ray, reflection_color, ray_depth + 1);
 
-    if (ray.primitive->type == PrimitiveType::kPlane)
-    {
-      normal = XMVectorSetW(static_cast<Plane*>(ray.primitive)->p, 0.0f);
-    }
-
-    if (ray.primitive->type == PrimitiveType::kTriangle)
-    {
-      normal = static_cast<Triangle*>(ray.primitive)->nv;
-    }
-
-    if (materials[ray.primitive->mat]->is_mirror)
-    {
-      if (ray_depth < 32)
-      {
-        Ray secondary_ray(point, XMVector3Normalize(XMVector3Reflect(ray.D, normal)), zdepth);
-
-        Color reflection_color;
-
-        Trace(secondary_ray, reflection_color, ray_depth + 1);
-
-        out_color = reflection_color * materials[ray.primitive->mat]->diffuse;
-      }
+      out_color = reflection_color * materials[material]->diffuse;
     }
     else
     {
@@ -221,7 +202,7 @@ void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color, int ray_depth)
         out_color
       );
 
-      out_color = out_color * materials[ray.primitive->mat]->diffuse;
+      out_color = out_color * materials[material]->diffuse;
     }
   }
   else
@@ -231,9 +212,58 @@ void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color, int ray_depth)
 }
 
 //------------------------------------------------------------------------------------------------------
-void Tmpl8::Raytracer::IntersectScene(Ray& ray, XMVECTOR& out_point, XMVECTOR& out_normal, int& out_material)
+bool Tmpl8::Raytracer::IntersectScene(Ray& ray, XMVECTOR& out_point, XMVECTOR& out_normal, int& out_material)
 {
-  
+  int i = 0;
+
+  for (i = 0; i < num_triangles; ++i)
+  {
+    ray.Intersect(triangles[i]);
+  }
+
+  for (i = 0; i < num_aabbs; ++i)
+  {
+    ray.Intersect(aabbs[i]);
+  }
+
+  for (i = 0; i < num_planes; ++i)
+  {
+    ray.Intersect(planes[i]);
+  }
+
+  for (i = 0; i < num_spheres; ++i)
+  {
+    ray.Intersect(spheres[i]);
+  }
+
+  if (ray.primitive != nullptr)
+  {
+    out_point = ray.O + DirectX::XMVectorScale(XMVector3Normalize(ray.D), ray.t - 0.001f);
+
+    switch ((PrimitiveType)ray.primitive_type)
+    {
+    case PrimitiveType::kTriangle:
+      out_material = reinterpret_cast<Triangle*>(ray.primitive)->material;
+      out_normal = reinterpret_cast<Triangle*>(ray.primitive)->nv;
+      break;
+    case PrimitiveType::kAABB:
+      out_material = reinterpret_cast<AABB*>(ray.primitive)->material;
+      //out_normal = reinterpret_cast<AABB*>(ray.primitive)->;
+      break;
+    case PrimitiveType::kPlane:
+      out_material = reinterpret_cast<Plane*>(ray.primitive)->material;
+      out_normal = XMVectorSetW(reinterpret_cast<Plane*>(ray.primitive)->p, 0.0f);
+      break;
+    case PrimitiveType::kSphere:
+      out_material = reinterpret_cast<Sphere*>(ray.primitive)->material;
+      out_normal = reinterpret_cast<Sphere*>(ray.primitive)->NormalAt(out_point);
+      break;
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 //------------------------------------------------------------------------------------------------------
@@ -272,32 +302,40 @@ void Tmpl8::Raytracer::DirectIllumination(const XMVECTOR& point, const XMVECTOR&
 //------------------------------------------------------------------------------------------------------
 bool Tmpl8::Raytracer::IsVisible(const XMVECTOR& origin, const XMVECTOR& direction, float t)
 {
-  int i;
-  int num_primitives = primitives.size();
+  Ray visibility_ray(origin, direction, t);
 
-  for (i = 0; i < num_primitives; ++i)
+  int i = 0;
+
+  for (i = 0; i < num_triangles; ++i)
   {
-    Ray ray(origin, direction, t);
+    visibility_ray.Intersect(triangles[i]);
 
-    if (primitives[i]->type == PrimitiveType::kSphere)
-    {
-      ray.Intersect(*static_cast<Sphere*>(primitives[i]));
-    }
-
-    if (primitives[i]->type == PrimitiveType::kPlane)
-    {
-      ray.Intersect(*static_cast<Plane*>(primitives[i]));
-    }
-
-    if (primitives[i]->type == PrimitiveType::kTriangle)
-    {
-      ray.Intersect(*static_cast<Triangle*>(primitives[i]));
-    }
-    
-    if (ray.t < t)
-    {
+    if (visibility_ray.t < t)
       return false;
-    }
+  }
+
+  for (i = 0; i < num_aabbs; ++i)
+  {
+    visibility_ray.Intersect(aabbs[i]);
+
+    if (visibility_ray.t < t)
+      return false;
+  }
+
+  for (i = 0; i < num_planes; ++i)
+  {
+    visibility_ray.Intersect(planes[i]);
+
+    if (visibility_ray.t < t)
+      return false;
+  }
+
+  for (i = 0; i < num_spheres; ++i)
+  {
+    visibility_ray.Intersect(spheres[i]);
+
+    if (visibility_ray.t < t)
+      return false;
   }
 
   return true;

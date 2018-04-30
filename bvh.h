@@ -4,3 +4,12 @@ struct BVHNode
 {
   BoundingBox box;
 };
+
+class BVH
+{
+public:
+  BVH();
+  ~BVH();
+
+  void ConstructBVH();
+};

@@ -73,7 +73,15 @@ void Game::Init()
     {
       for (int y = 0; y < (int)height; y++)
       {
-        raytracer.primitives.push_back(new Sphere(x % 2 == 0 ? 0 : 1, XMFLOAT3((x * 1.5f) - width * 0.5f, -2.0f, (y * 1.5f) - height * 0.5f), 0.4f));
+        int idx = raytracer.num_spheres++;
+        raytracer.spheres[idx].material = x % 2 == 0 ? 0 : 1;
+        raytracer.spheres[idx].sphere.Radius = 0.4f;
+
+        raytracer.spheres[idx].sphere.Center = XMFLOAT3(
+          (x * 1.5f) - width * 0.5f, 
+          -2.0f, 
+          (y * 1.5f) - height * 0.5f
+        );
       }
     }
 

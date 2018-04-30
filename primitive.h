@@ -5,41 +5,22 @@
 #undef min
 #undef max
 
-enum class PrimitiveType
+struct Triangle
 {
-  kTriangle,
-  kSphere,
-  kPlane,
-  kAABB
-};
+  Triangle() : material(0), p0f(0.0f, 0.0f, 0.0f, 1.0f), p1f(0.0f, 1.0f, 0.0f, 1.0f), p2f(1.0f, 0.0f, 0.0f, 1.0f), nf(0.0f, 0.0f, 0.0f, 0.0f) {}
 
-struct Primitive
-{
-  Primitive(PrimitiveType type, int material) :
-    type(type),
-    mat(material)
-  {
-
-  }
-
-  PrimitiveType type;
-  int mat;
-};
-
-struct Triangle : public Primitive
-{
   Triangle(int material, const XMVECTOR& point0, const XMVECTOR& point1, const XMVECTOR& point2, const XMVECTOR& normal) :
-    Primitive(PrimitiveType::kTriangle, material),
+    material(material),
     p0v(point0),
     p1v(point1),
     p2v(point2),
     nv(normal)
   {
-
+    
   }
 
   Triangle(int material, const XMFLOAT4& point0, const XMFLOAT4& point1, const XMFLOAT4& point2, const XMFLOAT4& normal) :
-    Primitive(PrimitiveType::kTriangle, material),
+    material(material),
     p0f(point0),
     p1f(point1),
     p2f(point2),
@@ -50,34 +31,38 @@ struct Triangle : public Primitive
 
   union
   {
-    XMVECTOR p0v; // Point 0 of the triangle
-    XMFLOAT4 p0f; // Point 0 of the triangle
+    XMVECTOR p0v;
+    XMFLOAT4 p0f;
   };
 
   union
   {
-    XMVECTOR p1v; // Point 1 of the triangle
-    XMFLOAT4 p1f; // Point 1 of the triangle
+    XMVECTOR p1v;
+    XMFLOAT4 p1f;
   };
 
   union
   {
-    XMVECTOR p2v; // Point 2 of the triangle
-    XMFLOAT4 p2f; // Point 2 of the triangle
+    XMVECTOR p2v;
+    XMFLOAT4 p2f;
   };
 
   union
   {
-    XMVECTOR nv; // Normal of the triangle
-    XMFLOAT4 nf; // Normal of the triangle
+    XMVECTOR nv;
+    XMFLOAT4 nf;
   };
+
+  int material;
 };
 
-struct Sphere : public Primitive
+struct Sphere
 {
 public:
+  Sphere() : material(0), sphere(XMFLOAT3(0.0f, 0.0f, 0.0f), 1.0f) {}
+
   Sphere(int material, const XMFLOAT3& pos, float radius) :
-    Primitive(PrimitiveType::kSphere, material),
+    material(material),
     sphere(pos, radius)
   {
     
@@ -85,23 +70,26 @@ public:
 
   XMVECTOR NormalAt(const XMVECTOR& point)
   {
-    return XMVectorSetW(XMVector3Normalize(XMVectorSetW(point, 0.0f) - XMVectorSet(sphere.Center.x, sphere.Center.y, sphere.Center.z, 0.0f)), 0.0f);
+    return XMVector3Normalize(point - XMVectorSet(sphere.Center.x, sphere.Center.y, sphere.Center.z, 0.0f));
   }
 
   BoundingSphere sphere;
+  int material;
 };
 
-struct Plane : public Primitive
+struct Plane
 {
+  Plane() : material(0), pf(0.0f, 1.0f, 0.0f, 0.0f) {}
+
   Plane(int material, const XMVECTOR& plane) :
-    Primitive(PrimitiveType::kPlane, material),
+    material(material),
     p(plane)
   {
 
   }
 
   Plane(int material, const XMFLOAT4& plane) :
-    Primitive(PrimitiveType::kPlane, material),
+    material(material),
     pf(plane)
   {
 
@@ -109,26 +97,31 @@ struct Plane : public Primitive
 
   union
   {
-    XMVECTOR p; // center / origin of the plane
-    XMFLOAT4 pf; // center / origin of the plane
+    XMVECTOR p; // Plane vector. XYZ = direction. W = offset along that direction. Origin of plane is therefore Ox = X*W | Oy = Y*W | Oz = Z*W
+    XMFLOAT4 pf; // Float representation of plane
   };
+
+  int material;
 };
 
-struct AABB : public Primitive
+struct AABB
 {
+  AABB() : material(0), box(XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(1.0f, 1.0f, 1.0f)) {}
+
   AABB(int material, const XMVECTOR& center, const XMVECTOR& extents) :
-    Primitive(PrimitiveType::kAABB, material)
+    material(material)
   {
     XMStoreFloat3(&box.Center, center);
     XMStoreFloat3(&box.Extents, extents);
   }
 
   AABB(int material, const XMFLOAT3& center, const XMFLOAT3& extents) :
-    Primitive(PrimitiveType::kAABB, material),
+    material(material),
     box(center, extents)
   {
     
   }
 
+  int material;
   BoundingBox box;
 };
