@@ -85,7 +85,7 @@ public:
 
   XMVECTOR NormalAt(const XMVECTOR& point)
   {
-    return XMVectorSetW(XMVector3Normalize(point - XMVectorSet(sphere.Center.x, sphere.Center.y, sphere.Center.z, 1.0f)), 0.0f);
+    return XMVectorSetW(XMVector3Normalize(XMVectorSetW(point, 0.0f) - XMVectorSet(sphere.Center.x, sphere.Center.y, sphere.Center.z, 0.0f)), 0.0f);
   }
 
   BoundingSphere sphere;

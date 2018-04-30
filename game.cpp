@@ -7,6 +7,7 @@
 #include "primitive.h"
 #include "material.h"
 #include "timer.h"
+#include "light.h"
 
 Raytracer raytracer;
 Rasterizer rasterizer;
@@ -16,6 +17,8 @@ bool space_pressed;
 bool space_released;
 bool space;
 bool frame_rendered;
+int light;
+float angle;
 
 Timer frame_timer;
 Timer render_timer;
@@ -47,6 +50,8 @@ void Game::Init()
 	camera.SetPosition( position );
 	camera.LookAt( vec3( 0, 0, 0 ) );
 
+  angle = 0.0f;
+
   if (false)
   {
     SGNode* unity_scene = rasterizer.scene->LoadOBJ("assets/unity_full/unityScene.obj", 1.0f);
@@ -57,16 +62,22 @@ void Game::Init()
   else
   {
     raytracer.materials.push_back(new Material(false, Color::kBlue));   // 0
+    raytracer.materials.push_back(new Material(true, Color::kWhite));   // 0
 
     float boxSize = 10.0f;
 
-    for (int x = 0; x < 10; x++)
+    float width = 5.0f;
+    float height = 5.0f;
+
+    for (int x = 0; x < (int)width; x++)
     {
-      for (int y = 0; y < 10; y++)
+      for (int y = 0; y < (int)height; y++)
       {
-        raytracer.primitives.push_back(new Sphere(0, XMFLOAT3(x, 0.0f, y), 0.5f));
+        raytracer.primitives.push_back(new Sphere(x % 2 == 0 ? 0 : 1, XMFLOAT3((x * 1.5f) - width * 0.5f, -2.0f, (y * 1.5f) - height * 0.5f), 0.4f));
       }
     }
+
+    light = raytracer.AddPointLight(XMFLOAT3(0.0f, 0.0f, 0.0f), Color(255u, 255u, 255u, 255u));
   }
 }
 
@@ -91,10 +102,10 @@ void Game::HandleInput( float dt )
 	if (GetAsyncKeyState( 'R' )) position += camera.GetUp() * dt * 0.4f;
 	if (GetAsyncKeyState( 'F' )) position -= camera.GetUp() * dt * 0.4f;
 	camera.SetPosition( position );
-	if (GetAsyncKeyState( VK_LEFT )) camera.LookAt( camera.GetPosition() + camera.GetForward() - dt * 0.02f * camera.GetRight() );
-	if (GetAsyncKeyState( VK_RIGHT )) camera.LookAt( camera.GetPosition() + camera.GetForward() + dt * 0.02f * camera.GetRight() );
-	if (GetAsyncKeyState( VK_UP )) camera.LookAt( camera.GetPosition() + camera.GetForward() + dt * 0.02f * camera.GetUp() );
-	if (GetAsyncKeyState( VK_DOWN )) camera.LookAt( camera.GetPosition() + camera.GetForward() - dt * 0.02f * camera.GetUp() );
+	if (GetAsyncKeyState( VK_LEFT )) camera.LookAt( camera.GetPosition() + camera.GetForward() - dt * 0.1f * camera.GetRight() );
+	if (GetAsyncKeyState( VK_RIGHT )) camera.LookAt( camera.GetPosition() + camera.GetForward() + dt * 0.1f * camera.GetRight() );
+	if (GetAsyncKeyState( VK_UP )) camera.LookAt( camera.GetPosition() + camera.GetForward() + dt * 0.1f * camera.GetUp() );
+	if (GetAsyncKeyState( VK_DOWN )) camera.LookAt( camera.GetPosition() + camera.GetForward() - dt * 0.1f * camera.GetUp() );
 
   if (GetAsyncKeyState(VK_SPACE))
   {
@@ -158,7 +169,14 @@ void Game::Tick( float deltaTime )
     if (!frame_rendered || true)
     {
       screen->Clear(Color::kSkyBlue.color_byte);
-      
+
+      raytracer.point_lights[light].pf.x = 25.0f * sin(angle);
+      raytracer.point_lights[light].pf.y = 25.0f * cos(angle);
+      raytracer.point_lights[light].pf.z = 0.0f;
+      raytracer.point_lights[light].p = XMVectorSetW(raytracer.point_lights[light].p, 1.0f);
+
+      angle += 4.0f * (XM_PI / 180.0f);
+
       char perf_text[256];
       render_timer.Reset();
       raytracer.Render(camera);

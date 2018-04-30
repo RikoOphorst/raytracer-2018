@@ -3,6 +3,7 @@
 struct Primitive;
 struct Color;
 struct Material;
+struct PointLight;
 class Ray;
 
 namespace Tmpl8
@@ -24,6 +25,7 @@ namespace Tmpl8
     void IntersectScene(Ray& ray, XMVECTOR& out_point, XMVECTOR& out_normal, int& out_material);
     void DirectIllumination(const XMVECTOR& I, const XMVECTOR& N, Color& out_color);
     bool IsVisible(const XMVECTOR& origin, const XMVECTOR& direction, float t);
+    int AddPointLight(const XMFLOAT3& pos, const Color& color);
 
     Scene* scene;
     static float* zbuffer;
@@ -40,6 +42,10 @@ namespace Tmpl8
 
     std::vector<Material*> materials;
     std::vector<Primitive*> primitives;
+
+    PointLight* point_lights;
+    int num_point_lights;
+    int max_point_lights;
 
     int ray_counter = 0;
   };

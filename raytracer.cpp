@@ -4,6 +4,7 @@
 #include "color.h"
 #include "material.h"
 #include "ray.h"
+#include "light.h"
 
 #include <algorithm>
 
@@ -56,6 +57,10 @@ void Raytracer::Init(Surface* scr)
   // initialize scene
   (scene = new Scene())->root = new SGNode();
   screen = scr;
+  
+  max_point_lights = 20;
+  num_point_lights = 0;
+  point_lights = new PointLight[max_point_lights];
 }
 
 //------------------------------------------------------------------------------------------------------
@@ -124,6 +129,7 @@ void Raytracer::Render(Camera& camera)
   Color color;
 
   ray_counter = 0;
+
   for (int u = 0; u < SCRWIDTH; u++)
   {
     for (int v = 0; v < SCRHEIGHT; v++)
@@ -176,7 +182,7 @@ void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color, int ray_depth)
 
   if (ray.primitive != nullptr)
   {
-    XMVECTOR point = ray.O + DirectX::XMVectorScale(ray.D, ray.t - EPSILON);
+    XMVECTOR point = ray.O + DirectX::XMVectorScale(XMVector3Normalize(ray.D), ray.t - 0.001f);
     XMVECTOR normal;
 
     if (ray.primitive->type == PrimitiveType::kSphere)
@@ -194,15 +200,18 @@ void Tmpl8::Raytracer::Trace(Ray& ray, Color& out_color, int ray_depth)
       normal = static_cast<Triangle*>(ray.primitive)->nv;
     }
 
-    if (materials[ray.primitive->mat]->is_mirror && ray_depth < 32)
+    if (materials[ray.primitive->mat]->is_mirror)
     {
-      Ray secondary_ray(point, XMVector3Normalize(XMVector3Reflect(point, normal)), zdepth);
-    
-      Color reflection_color;
-    
-      Trace(secondary_ray, reflection_color, ray_depth + 1);
-      
-      out_color = reflection_color * materials[ray.primitive->mat]->diffuse;
+      if (ray_depth < 32)
+      {
+        Ray secondary_ray(point, XMVector3Normalize(XMVector3Reflect(ray.D, normal)), zdepth);
+
+        Color reflection_color;
+
+        Trace(secondary_ray, reflection_color, ray_depth + 1);
+
+        out_color = reflection_color * materials[ray.primitive->mat]->diffuse;
+      }
     }
     else
     {
@@ -230,31 +239,32 @@ void Tmpl8::Raytracer::IntersectScene(Ray& ray, XMVECTOR& out_point, XMVECTOR& o
 //------------------------------------------------------------------------------------------------------
 void Tmpl8::Raytracer::DirectIllumination(const XMVECTOR& point, const XMVECTOR& normal, Color& out_color)
 {
-  XMVECTOR L = XMVectorSet(0.0f, 5.0f, 0.0f, 1.0f) - point;
-  XMVECTOR dist = XMVector3Length(L);
-
-  L = XMVector3Normalize(L);
-
-  if (!IsVisible(point, L, XMVectorGetX(dist)))
+  for (int i = 0; i < num_point_lights; i++)
   {
-    out_color = Color::kBlack;
-  }
-  else
-  {
-    XMVECTOR NdotL = XMVector3Dot(normal, L);
-    if (XMVectorGetX(NdotL) <= 0.0f)
+    XMVECTOR L = point_lights[i].p - point;
+    XMVECTOR dist = XMVector3Length(L);
+
+    L = XMVector3Normalize(L);
+
+    if (!IsVisible(point, L, XMVectorGetX(dist)))
     {
       out_color = Color::kBlack;
     }
     else
     {
-      out_color = Color(
-        vec3(1.0f, 1.0f, 1.0f) * 
-        //10.0f * 
-        std::max(XMVectorGetX(NdotL), 0.0f)
-        //* (2.0f / (dist * dist))
-        , true
-      );
+      XMVECTOR NdotL = XMVector3Dot(normal, L);
+      if (XMVectorGetX(NdotL) <= 0.0f)
+      {
+        out_color = Color::kBlack;
+      }
+      else
+      {
+        out_color = Color(
+          vec3(1.0f, 1.0f, 1.0f) *
+          std::max(XMVectorGetX(NdotL), 0.0f)
+          , true
+        );
+      }
     }
   }
 }
@@ -291,4 +301,13 @@ bool Tmpl8::Raytracer::IsVisible(const XMVECTOR& origin, const XMVECTOR& directi
   }
 
   return true;
+}
+
+//------------------------------------------------------------------------------------------------------
+int Tmpl8::Raytracer::AddPointLight(const XMFLOAT3& pos, const Color& color)
+{
+  point_lights[num_point_lights].pf = pos;
+  point_lights[num_point_lights].color = color;
+  
+  return num_point_lights++;
 }
