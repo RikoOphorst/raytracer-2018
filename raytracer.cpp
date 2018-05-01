@@ -10,7 +10,7 @@
 
 #include <DirectXMath.h>
 
-#define MAX_RAY_DEPTH 32
+#define MAX_RAY_DEPTH 4
 
 float* Raytracer::zbuffer = nullptr;
 vec4 Raytracer::frustum[5];
@@ -18,12 +18,14 @@ vec4 Raytracer::frustum[5];
 #undef max
 #undef min
 
+Raytracer* Raytracer::instance = nullptr;
+
 //------------------------------------------------------------------------------------------------------
 Raytracer::Raytracer() :
   screen(nullptr),
   scene(nullptr)
 {
-
+  instance = this;
 }
 
 //------------------------------------------------------------------------------------------------------

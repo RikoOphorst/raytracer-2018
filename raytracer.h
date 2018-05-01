@@ -61,5 +61,7 @@ namespace Tmpl8
     int num_point_lights, max_point_lights;
 
     int ray_counter = 0;
+
+    static Raytracer* instance;
   };
 };
